@@ -1,25 +1,36 @@
-const express = require('express')
-const app = express()
+const app = require("./app")
+const connectDatabase = require("./db/Database");
 
-const mongoose = require('mongoose');
 
-const connectToDatabase = async () => {
-    try {
-      await mongoose.connect("mongodb://localhost:27017/follow-along", {
-        dbName: "follow-along"
-      });
-      console.log("Connected to follow-along database");
-    } catch (err) {
-      console.error("Error connecting to the database:", err);
-    }
-  };
-  app.get('/',(req,res)=>{
-    res.send('hello')
-  })
-  
-  // Call the function to connect to the database
-  connectToDatabase();
+//Handling uncaught Exception when setting up backend server
+process.on("uncaughtException", (err)=>{
+    console.error(`Error: ${err.message}`);
+    console.log('shutting down the server for handling uncaught exception');
+});
 
-app.listen(5000, ()=>{
-    console.log("Server is running on port 5000");
+
+//config
+if(process.env.NODE_ENV !== "PRODUCTION"){
+    require("dotenv").config({path:"./config/.env"});
+};
+
+
+
+
+connectDatabase();
+
+
+//create server
+const server = app.listen(process.env.PORT, ()=>{
+    console.log(`server is running on http://localhost:${process.env.PORT}`);
+});
+
+
+//Handling unhandled promise rejection
+process.on("uncaughtException", (err)=>{
+    console.error(`Unhandled Rejection: ${err.message}`);
+    console.log("shutting down the server due to unhandled rejection");
+    server.close(()=>{
+        process.exit(1); //exit with failure code
+    })
 })
